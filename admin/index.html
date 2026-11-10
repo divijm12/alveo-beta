@@ -50,10 +50,19 @@
       <div class="row" style="justify-content:space-between"><h1 style="text-align:left;font-size:1.25rem">Invites</h1><button class="ghost small" id="refresh">Refresh</button></div>
       <div class="scroll"><table><thead><tr><th>Who</th><th>Status</th><th>Clips shared</th><th>Created</th><th></th></tr></thead><tbody id="rows"></tbody></table></div>
     </section>
+    <section class="card" id="viewer" hidden>
+      <div class="row" style="justify-content:space-between"><h1 style="text-align:left;font-size:1.25rem" id="viewerTitle">Clips</h1>
+        <button class="ghost small" id="viewerClose">Close</button></div>
+      <p class="fine">Shared by this tester under the beta agreement, for training Alveo. Links expire after 10 minutes; nothing is saved.</p>
+      <div class="row" id="clipList"></div>
+      <div id="clipStage" style="display:grid;gap:12px"></div>
+    </section>
     <div class="row"><button class="ghost small" id="out2">Sign out</button></div>
   </section>
 </main>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+<script src="viewer.js"></script>
 <script src="../config.js"></script>
 <script>
 (async () => {
@@ -110,6 +119,25 @@
     loadRequests(); load();
   });
 
+  async function openClips(inviteId, name) {
+    $("viewer").hidden = false; $("viewerTitle").textContent = `Clips: ${name}`;
+    $("clipList").textContent = "Loading…"; $("clipStage").textContent = "";
+    $("viewer").scrollIntoView({ behavior: "smooth", block: "start" });
+    const r = await fn("beta-admin-clips", { invite_id: inviteId });
+    if (!r.ok) { $("clipList").textContent = r.error || "Couldn't load clips."; return; }
+    const label = { yes: "Yes", no: "No", missed_yes: "Near miss: yes", missed_no: "Near miss: no" };
+    $("clipList").innerHTML = r.clips.map((c, k) => `<button class="ghost small" data-clip="${k}">${new Date(c.created_at).toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })} · ${label[c.answer] || c.answer}</button>`).join("") || "No clips yet.";
+    const open = async k => {
+      const c = r.clips[k]; $("clipList").querySelectorAll("button").forEach((b, j) => b.className = j === k ? "small" : "ghost small");
+      if (!c.url) { $("clipStage").textContent = "This clip's link couldn't be created."; return; }
+      try { const buf = await (await fetch(c.url)).arrayBuffer(); await AlveoClipViewer.render($("clipStage"), buf); }
+      catch (e) { $("clipStage").textContent = "Couldn't open this clip: " + e.message; }
+    };
+    $("clipList").onclick = e => { const b = e.target.closest("button[data-clip]"); if (b) open(+b.dataset.clip); };
+    if (r.clips.length) open(0);
+  }
+  $("viewerClose").onclick = () => { AlveoClipViewer.stop(); $("viewer").hidden = true; $("clipStage").textContent = ""; };
+
   async function load() {
     const { data: inv, error } = await sb.from("beta_invites").select("*").order("created_at", { ascending: false });
     if (error) { $("rows").innerHTML = `<tr><td colspan="5">Couldn't load invites: ${esc(error.message)}</td></tr>`; return; }
@@ -128,6 +156,7 @@
         <td><div class="row"><button class="ghost small" data-copy="${esc(i.code)}">Copy link</button>
         ${!i.revoked && !i.downloaded_at ? `<button class="ghost small" data-act="email" data-id="${i.id}">${i.emailed_at ? "Resend email" : "Email it"}</button>` : ""}
         <button class="ghost small" data-act="${i.revoked ? "unrevoke" : "revoke"}" data-id="${i.id}">${i.revoked ? "Restore" : "Revoke"}</button>
+        ${n[i.id] ? `<button class="small" data-act="clips" data-id="${i.id}" data-name="${esc(i.name || i.email)}">View clips</button>` : ""}
         ${i.downloaded_at ? `<button class="ghost small" data-act="reset" data-id="${i.id}" title="Allow one more download and a new Mac">Reset</button>` : ""}</div></td></tr>`;
     }).join("") || '<tr><td colspan="5" class="sub">No invites yet. Create the first one above.</td></tr>';
   }
@@ -135,6 +164,7 @@
     const b = e.target.closest("button"); if (!b) return;
     if (b.dataset.copy) { try { await navigator.clipboard.writeText(linkFor(b.dataset.copy)); b.textContent = "Copied"; } catch {} return; }
     const id = b.dataset.id, act = b.dataset.act;
+    if (act === "clips") { openClips(id, b.dataset.name); return; }
     if (act === "email") { b.disabled = true; const r = await fn("beta-admin-invite", { action: "send", invite_id: id }); b.textContent = r.ok ? "Sent" : (r.error || "Failed"); load(); return; }
     if (act === "reset" && b.textContent !== "Sure?") { b.textContent = "Sure?"; return; }       // two-click confirm (no dialogs)
     const patch = act === "revoke" ? { revoked: true } : act === "unrevoke" ? { revoked: false }
