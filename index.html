@@ -11,12 +11,12 @@
   <svg class="wm" role="img" aria-label="Alveo" xmlns="http://www.w3.org/2000/svg" viewBox="-7 -789 4780 846">
 <path d="M33 0 302 -730H438L716 0H638L379 -682L420 -661H315L358 -682L109 0ZM177 -232 202 -301H541L567 -232Z" fill="currentColor"/><path d="M1083.0 0V-730H1159.0V0ZM1139.0 0V-69H1482.0V0Z" fill="currentColor"/><path d="M2013.0 0 1752.0 -730H1830.0L2072.0 -47L2031.0 -69H2137.0L2093.0 -47L2318.0 -730H2395.0L2150.0 0Z" fill="currentColor"/><path d="M2761.0 0V-730H2837.0V0ZM2819.0 0V-69H3184.0V0ZM2819.0 -337V-405H3150.0V-337ZM2819.0 -661V-730H3173.0V-661Z" fill="currentColor"/><path d="M3904.0 17Q3809.0 17 3739.0 -17.0Q3669.0 -51 3623.0 -107.0Q3577.0 -163 3554.0 -229.0Q3531.0 -295 3531.0 -358V-376Q3531.0 -443 3554.5 -509.5Q3578.0 -576 3625.0 -630.0Q3672.0 -684 3742.0 -716.5Q3812.0 -749 3904.0 -749Q3997.0 -749 4066.5 -716.5Q4136.0 -684 4183.0 -630.0Q4230.0 -576 4253.5 -509.5Q4277.0 -443 4277.0 -376V-357Q4277.0 -294 4254.5 -228.5Q4232.0 -163 4185.5 -107.0Q4139.0 -51 4069.0 -17.0Q3999.0 17 3904.0 17ZM3904.0 -53Q3974.0 -53 4029.0 -78.5Q4084.0 -104 4122.0 -148.5Q4160.0 -193 4180.0 -249.0Q4200.0 -305 4200.0 -366Q4200.0 -430 4180.0 -486.0Q4160.0 -542 4121.5 -585.5Q4083.0 -629 4028.0 -654.0Q3973.0 -679 3904.0 -679Q3836.0 -679 3781.0 -654.0Q3726.0 -629 3687.5 -585.5Q3649.0 -542 3628.5 -486.0Q3608.0 -430 3608.0 -366Q3608.0 -305 3628.0 -249.0Q3648.0 -193 3686.0 -148.5Q3724.0 -104 3779.5 -78.5Q3835.0 -53 3904.0 -53Z" fill="currentColor"/><path d="M4639.0 0V-99H4733.0V0Z" fill="#ff2d2d"/>
 </svg>
-  <h1 id="title">Alveo private beta</h1>
-  <p class="center" id="lede">Alveo notices when you vape at your desk and helps you cut down, and possibly quit.</p>
+  <h1 id="title">Private beta</h1>
+  <p class="center" id="lede">An app that notices when you vape at your desk and helps you cut down, and possibly quit.</p>
 
   <section class="card" id="stepCode">
     <p style="color:var(--ink)"><strong>Already have an access code?</strong></p>
-    <label for="code">Access code (from your invite email)</label>
+    <label for="code" class="sr">Access code</label>
     <input id="code" placeholder="ALV-XXXXXX-XXXXXX" autocomplete="off" spellcheck="false">
     <button id="codeNext">Continue</button>
     <div class="msg" id="codeMsg" role="status"></div>
@@ -45,7 +45,7 @@
   <section class="card" id="stepDone" hidden>
     <p style="color:var(--ink)"><strong>Your download has started.</strong></p>
     <ol class="steps">
-      <li>Open <b>Alveo-0.1.0-beta.dmg</b> and drag Alveo into Applications.</li>
+      <li>Open the Alveo file you just downloaded and drag Alveo into Applications.</li>
       <li>Open Alveo and enter your access code when it asks:</li>
     </ol>
     <div class="code" id="yourCode"></div>
@@ -53,8 +53,7 @@
     <p class="fine">If the download didn't start, <a id="again" href="#" style="color:var(--ink-2)">use this link</a> (it works for a few minutes). Questions: support@getalveo.app</p>
   </section>
 
-  <p class="fine center">The beta shares the short mouth-area clips from alerts you answer, to help train Alveo. You'll confirm this in the app.
-    Clips are deleted after 6 months, or sooner on request. macOS only for now; Windows is coming.</p>
+  <p class="fine center">Mac only for now. Questions: support@getalveo.app</p>
 </main>
 <script src="config.js"></script>
 <script>
@@ -84,7 +83,7 @@
     const r = await call("beta-download", { code: c, check: true });
     if (!r.ok) { say(msgEl, r.error || "Something went wrong.", "err"); show("stepCode", "stepRequest"); return; }
     code = c; history.replaceState(null, "", "#" + c);
-    $("title").textContent = r.name ? `Hi ${r.name}, you're invited` : "You're invited to the Alveo beta";
+    $("title").textContent = r.name ? `Hi ${r.name}, you're invited` : "You're invited";
     $("readyCode").textContent = c; say(msgEl, ""); show("stepReady"); $("download").focus();
   }
   $("codeNext").onclick = () => openCode($("code").value, "codeMsg");
