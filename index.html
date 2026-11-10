@@ -1,10 +1,11 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-ga-title="Alveo beta">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Alveo beta</title>
 <meta name="robots" content="noindex, nofollow">
 <link rel="icon" type="image/png" href="favicon.png"><link rel="stylesheet" href="style.css">
+<script src="analytics.js" defer></script>
 </head>
 <body>
 <main class="wrap">
@@ -53,7 +54,7 @@
     <p class="fine">If the download didn't start, <a id="again" href="#" style="color:var(--ink-2)">use this link</a> (it works for a few minutes). Questions: support@getalveo.app</p>
   </section>
 
-  <p class="fine center">Mac only for now. Questions: support@getalveo.app</p>
+  <p class="fine center">Mac only for now. Questions: support@getalveo.app · <a href="#" onclick="window.alveoCookies&&alveoCookies();return false" style="color:var(--ink-3)">Cookies</a></p>
 </main>
 <script src="config.js"></script>
 <script>
@@ -94,7 +95,7 @@
     const r = await call("beta-download", { code });
     $("download").disabled = false;
     if (!r.ok) { say("dlMsg", r.error || "Something went wrong.", "err"); return; }
-    $("yourCode").textContent = code; $("again").href = r.url; show("stepDone");
+    $("yourCode").textContent = code; $("again").href = r.url; show("stepDone"); window.alveoTrack && alveoTrack("beta_download");
     $("title").textContent = r.name ? `You're in, ${r.name}` : "You're in";
     location.href = r.url;
   };
@@ -107,7 +108,7 @@
     $("rqSend").disabled = false;
     if (!r.ok) { say("rqMsg", r.error || "Something went wrong.", "err"); return; }
     ["rqName", "rqEmail", "rqNote"].forEach(id => $(id).value = "");
-    say("rqMsg", "Thanks! We got your request. If there's a spot, you'll get an email with your access code.", "ok");
+    say("rqMsg", "Thanks! We got your request. If there's a spot, you'll get an email with your access code.", "ok"); window.alveoTrack && alveoTrack("beta_request");
   };
   const fromLink = norm(decodeURIComponent(location.hash.slice(1)));
   if (valid(fromLink)) { $("code").value = fromLink; openCode(fromLink, "codeMsg"); }
