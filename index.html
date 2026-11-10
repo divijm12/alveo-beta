@@ -20,6 +20,18 @@
     <button id="codeNext">Continue</button>
   </section>
 
+  <section class="card" id="stepRequest">
+    <p style="color:var(--ink)"><strong>No invite yet? Request access.</strong></p>
+    <p class="fine">The beta is small and for people who want to help train Alveo: it shares the short mouth-area clips
+      from alerts you answer (deleted after 6 months). US only for now, 18+.</p>
+    <label for="rqName">Name</label><input id="rqName" maxlength="80" autocomplete="name">
+    <label for="rqEmail">Email</label><input id="rqEmail" type="email" inputmode="email" autocomplete="email" placeholder="you@example.com">
+    <label for="rqNote">How do you know us? (optional)</label><input id="rqNote" maxlength="500">
+    <input id="rqCompany" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0">
+    <button id="rqSend">Request access</button>
+    <div class="msg" id="rqMsg" role="status"></div>
+  </section>
+
   <section class="card" id="stepEmail" hidden>
     <p>To make sure this invite is yours, enter the email address it was sent to. We'll email you a 6-digit code.</p>
     <label for="email">Your email</label>
@@ -55,7 +67,7 @@
 <script>
 (() => {
   const C = window.ALVEO_BETA, $ = id => document.getElementById(id);
-  const show = id => ["stepCode", "stepEmail", "stepOtp", "stepDone"].forEach(s => $(s).hidden = s !== id);
+  const show = id => ["stepCode", "stepEmail", "stepOtp", "stepDone", "stepRequest"].forEach(s => $(s).hidden = !(s === id || (id === "stepCode" && s === "stepRequest")));
   const norm = s => String(s || "").trim().toUpperCase();
   const valid = c => /^ALV-[0-9A-F]{6}-[0-9A-F]{6}$/.test(c);
   let code = norm(decodeURIComponent(location.hash.slice(1))), email = "", dlUrl = "";
@@ -73,6 +85,16 @@
   if (valid(code)) goEmail(); else if (code) $("code").value = code;
   $("codeNext").onclick = () => { code = norm($("code").value); if (!valid(code)) { $("code").focus(); return; } history.replaceState(null, "", "#" + code); goEmail(); };
   $("code").addEventListener("keydown", e => e.key === "Enter" && $("codeNext").click());
+  $("rqSend").onclick = async () => {
+    const name = $("rqName").value.trim(), email = $("rqEmail").value.trim();
+    if (!name || !$("rqEmail").checkValidity() || !email) { say("rqMsg", "Please enter your name and a valid email address.", "err"); return; }
+    $("rqSend").disabled = true; say("rqMsg", "Sending…");
+    const r = await call("beta-request-access", { name, email, note: $("rqNote").value.trim(), company: $("rqCompany").value });
+    $("rqSend").disabled = false;
+    if (!r.ok) { say("rqMsg", r.error || "Something went wrong.", "err"); return; }
+    ["rqName", "rqEmail", "rqNote"].forEach(id => $(id).value = "");
+    say("rqMsg", "Thanks! We got your request. If there's a spot, you'll get an email with your personal invite.", "ok");
+  };
   async function sendCode(btn, msgEl) {
     email = $("email").value.trim().toLowerCase();
     if (!$("email").checkValidity() || !email) { say(msgEl, "Please enter a valid email address.", "err"); return false; }

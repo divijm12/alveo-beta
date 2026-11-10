@@ -14,16 +14,23 @@
 
   <section class="card" id="signin" style="max-width:30rem">
     <h1 style="text-align:left">Beta admin</h1>
-    <p>Only the Alveo team can sign in here. We'll email you a sign-in link.</p>
-    <label for="adminEmail">Your email</label>
-    <input id="adminEmail" type="email" autocomplete="email" placeholder="you@example.com">
-    <button id="sendLink">Email me a sign-in link</button>
+    <p>Only the Alveo team can sign in here.</p>
+    <label for="adminEmail">Email</label>
+    <input id="adminEmail" type="email" autocomplete="username" placeholder="you@example.com">
+    <label for="adminPw">Password</label>
+    <input id="adminPw" type="password" autocomplete="current-password">
+    <button id="signIn">Sign in</button>
     <div class="msg" id="signinMsg" role="status"></div>
   </section>
 
   <section class="card" id="notAdmin" hidden><p>This account isn't a beta admin.</p><button class="ghost" id="out1">Sign out</button></section>
 
   <section id="panel" hidden style="display:grid;gap:22px">
+    <section class="card">
+      <div class="row" style="justify-content:space-between"><h1 style="text-align:left;font-size:1.25rem">Access requests</h1><span class="fine" id="rqCount"></span></div>
+      <p class="fine">Approve only people who agreed with you to share data. Approving creates their invite and emails it to them; declining sends nothing.</p>
+      <div class="scroll"><table><thead><tr><th>Who</th><th>Note</th><th>Asked</th><th></th></tr></thead><tbody id="reqRows"></tbody></table></div>
+    </section>
     <section class="card">
       <h1 style="text-align:left;font-size:1.25rem">New invite</h1>
       <p class="fine">Only invite people who agreed to share data. One invite = one download + one Mac. The link expires in 30 days if unused.</p>
@@ -32,6 +39,7 @@
         <input id="invEmail" type="email" placeholder="Their email (they'll verify it)">
         <button id="create">Create invite</button>
       </div>
+      <label class="row" style="gap:8px;font-size:.85rem;color:var(--ink-2)"><input type="checkbox" id="autoEmail" checked style="width:auto;height:auto"> Email the invite to them automatically</label>
       <div class="msg" id="createMsg" role="status"></div>
       <div id="newInvite" hidden style="display:grid;gap:10px">
         <div class="code" id="newLink"></div>
@@ -58,14 +66,16 @@
   async function signOut() { await sb.auth.signOut(); location.reload(); }
   $("out1").onclick = signOut; $("out2").onclick = signOut;
 
-  $("sendLink").onclick = async () => {
-    const email = $("adminEmail").value.trim().toLowerCase();
-    if (!email) return say("signinMsg", "Enter your email.", "err");
-    $("sendLink").disabled = true;
-    const { error } = await sb.auth.signInWithOtp({ email, options: { shouldCreateUser: false, emailRedirectTo: location.origin + "/admin/" } });
-    $("sendLink").disabled = false;
-    say("signinMsg", error ? "Couldn't send the link. Is this an admin email?" : "Check your inbox for the sign-in link.", error ? "err" : "ok");
+  $("signIn").onclick = async () => {
+    const email = $("adminEmail").value.trim().toLowerCase(), password = $("adminPw").value;
+    if (!email || !password) return say("signinMsg", "Enter your email and password.", "err");
+    $("signIn").disabled = true; say("signinMsg", "Signing in…");
+    const { error } = await sb.auth.signInWithPassword({ email, password });
+    $("signIn").disabled = false;
+    if (error) return say("signinMsg", "Wrong email or password.", "err");
+    location.reload();
   };
+  $("adminPw").addEventListener("keydown", e => e.key === "Enter" && $("signIn").click());
 
   const { data: { session } } = await sb.auth.getSession();
   if (!session) return;                                   // stay on the sign-in card
@@ -73,6 +83,32 @@
   const { data: me } = await sb.from("beta_admins").select("email");   // RLS: only admins see rows
   if (!me || !me.length) { $("notAdmin").hidden = false; return; }
   $("panel").hidden = false;
+
+  async function fn(name, body) {
+    const { data: { session: s } } = await sb.auth.getSession();
+    try {
+      const r = await fetch(`${C.functions}/${name}`, { method: "POST",
+        headers: { "content-type": "application/json", authorization: `Bearer ${s.access_token}` }, body: JSON.stringify(body) });
+      return await r.json();
+    } catch { return { ok: false, error: "Couldn't reach the server." }; }
+  }
+  async function loadRequests() {
+    const { data: rq } = await sb.from("beta_requests").select("*").eq("status", "pending").order("created_at", { ascending: true });
+    $("rqCount").textContent = rq && rq.length ? `${rq.length} waiting` : "";
+    $("reqRows").innerHTML = (rq || []).map(r => `<tr><td><b>${esc(r.name)}</b><br><span class="sub">${esc(r.email)}</span></td>
+      <td><span class="sub">${esc(r.note) || "-"}</span></td><td>${day(r.created_at)}</td>
+      <td><div class="row"><button class="small" data-rq="approve" data-id="${r.id}">Approve &amp; email</button>
+      <button class="ghost small" data-rq="decline" data-id="${r.id}">Decline</button></div></td></tr>`).join("")
+      || '<tr><td colspan="4" class="sub">No requests waiting.</td></tr>';
+  }
+  $("reqRows").addEventListener("click", async e => {
+    const b = e.target.closest("button[data-rq]"); if (!b) return;
+    if (b.dataset.rq === "decline" && b.textContent !== "Sure?") { b.textContent = "Sure?"; return; }
+    b.disabled = true;
+    const r = await fn("beta-admin-invite", { action: b.dataset.rq, request_id: b.dataset.id });
+    if (!r.ok) { b.disabled = false; b.textContent = r.error || "Failed"; return; }
+    loadRequests(); load();
+  });
 
   async function load() {
     const { data: inv, error } = await sb.from("beta_invites").select("*").order("created_at", { ascending: false });
@@ -86,9 +122,11 @@
         : i.downloaded_at ? `<span class="pill">Downloaded</span> <span class="sub">${day(i.downloaded_at)}</span>`
         : expired ? '<span class="pill">Expired</span>' : '<span class="pill">Not downloaded yet</span>';
       const consent = i.activated_at && !i.consent_at ? ' <span class="sub">(sharing off)</span>' : "";
+      const mailed = i.emailed_at ? `<br><span class="sub">emailed ${day(i.emailed_at)}</span>` : "";
       return `<tr><td><b>${esc(i.name) || "-"}</b><br><span class="sub">${esc(i.email)}</span><br><span class="sub">${esc(i.code)}</span></td>
-        <td>${status}</td><td>${n[i.id] || 0}${consent}</td><td>${day(i.created_at)}<br><span class="sub">by ${esc(i.created_by.split("@")[0])}</span></td>
+        <td>${status}${mailed}</td><td>${n[i.id] || 0}${consent}</td><td>${day(i.created_at)}<br><span class="sub">by ${esc(i.created_by.split("@")[0])}</span></td>
         <td><div class="row"><button class="ghost small" data-copy="${esc(i.code)}">Copy link</button>
+        ${!i.revoked && !i.downloaded_at ? `<button class="ghost small" data-act="email" data-id="${i.id}">${i.emailed_at ? "Resend email" : "Email it"}</button>` : ""}
         <button class="ghost small" data-act="${i.revoked ? "unrevoke" : "revoke"}" data-id="${i.id}">${i.revoked ? "Restore" : "Revoke"}</button>
         ${i.downloaded_at ? `<button class="ghost small" data-act="reset" data-id="${i.id}" title="Allow one more download and a new Mac">Reset</button>` : ""}</div></td></tr>`;
     }).join("") || '<tr><td colspan="5" class="sub">No invites yet. Create the first one above.</td></tr>';
@@ -97,6 +135,7 @@
     const b = e.target.closest("button"); if (!b) return;
     if (b.dataset.copy) { try { await navigator.clipboard.writeText(linkFor(b.dataset.copy)); b.textContent = "Copied"; } catch {} return; }
     const id = b.dataset.id, act = b.dataset.act;
+    if (act === "email") { b.disabled = true; const r = await fn("beta-admin-invite", { action: "send", invite_id: id }); b.textContent = r.ok ? "Sent" : (r.error || "Failed"); load(); return; }
     if (act === "reset" && b.textContent !== "Sure?") { b.textContent = "Sure?"; return; }       // two-click confirm (no dialogs)
     const patch = act === "revoke" ? { revoked: true } : act === "unrevoke" ? { revoked: false }
       : { downloaded_at: null, device_hash: null, activated_at: null };
@@ -112,14 +151,21 @@
     const { data, error } = await sb.from("beta_invites").insert({ name: name || null, email }).select("code").single();
     $("create").disabled = false;
     if (error) return say("createMsg", "Couldn't create the invite: " + error.message, "err");
-    const link = linkFor(data.code); say("createMsg", "Invite created.", "ok");
+    const link = linkFor(data.code);
+    let note = "Invite created.";
+    if ($("autoEmail").checked) {
+      const { data: row } = await sb.from("beta_invites").select("id").eq("code", data.code).single();
+      const r = await fn("beta-admin-invite", { action: "send", invite_id: row.id });
+      note = r.ok ? `Invite created and emailed to ${email}.` : `Invite created, but the email failed: ${r.error || "unknown error"}. Copy the link below instead.`;
+    }
+    say("createMsg", note, note.includes("failed") ? "err" : "ok");
     $("newLink").textContent = link; $("newInvite").hidden = false;
     lastMsg = `Hey${name ? " " + name : ""}! Here's your personal invite to the Alveo beta: ${link}\nIt's only for you: you'll confirm with your email (${email}), it downloads once, and it works on one Mac. As we discussed, the beta shares the short clips from alerts you answer to help train Alveo.`;
     $("invName").value = ""; $("invEmail").value = ""; load();
   };
   $("copyLink").onclick = async () => { try { await navigator.clipboard.writeText($("newLink").textContent); $("copyLink").textContent = "Copied"; } catch {} };
   $("copyMsg").onclick = async () => { try { await navigator.clipboard.writeText(lastMsg); $("copyMsg").textContent = "Copied"; } catch {} };
-  load();
+  load(); loadRequests();
 })();
 </script>
 </body>
