@@ -3,7 +3,8 @@
    all denied). The choice is remembered in localStorage; the footer "Cookies" link asks again.
    Privacy: page_location is origin + path only (beta invite codes travel in the #hash), page_title is fixed text
    (the beta page puts tester names in the title), never on /admin/. Events carry no names, emails or codes.
-   The same file is in alveo-site and alveo-beta: keep them identical. */
+   The same file is in alveo-site and alveo-beta: keep them identical. After ANY change, bump ?v= on the
+   <script src="site.js?v=..."> tag in index.html (browsers cache this file ~10 min). */
 (() => {
   const ID = "G-X8DBJDHBE8";                                 // GA4 Measurement ID, e.g. "G-XXXXXXXXXX" (public, not a secret)
   const KEY = "alveo_analytics";                   // "yes" | "no"
