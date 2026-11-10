@@ -12,16 +12,18 @@
 <path d="M33 0 302 -730H438L716 0H638L379 -682L420 -661H315L358 -682L109 0ZM177 -232 202 -301H541L567 -232Z" fill="currentColor"/><path d="M1083.0 0V-730H1159.0V0ZM1139.0 0V-69H1482.0V0Z" fill="currentColor"/><path d="M2013.0 0 1752.0 -730H1830.0L2072.0 -47L2031.0 -69H2137.0L2093.0 -47L2318.0 -730H2395.0L2150.0 0Z" fill="currentColor"/><path d="M2761.0 0V-730H2837.0V0ZM2819.0 0V-69H3184.0V0ZM2819.0 -337V-405H3150.0V-337ZM2819.0 -661V-730H3173.0V-661Z" fill="currentColor"/><path d="M3904.0 17Q3809.0 17 3739.0 -17.0Q3669.0 -51 3623.0 -107.0Q3577.0 -163 3554.0 -229.0Q3531.0 -295 3531.0 -358V-376Q3531.0 -443 3554.5 -509.5Q3578.0 -576 3625.0 -630.0Q3672.0 -684 3742.0 -716.5Q3812.0 -749 3904.0 -749Q3997.0 -749 4066.5 -716.5Q4136.0 -684 4183.0 -630.0Q4230.0 -576 4253.5 -509.5Q4277.0 -443 4277.0 -376V-357Q4277.0 -294 4254.5 -228.5Q4232.0 -163 4185.5 -107.0Q4139.0 -51 4069.0 -17.0Q3999.0 17 3904.0 17ZM3904.0 -53Q3974.0 -53 4029.0 -78.5Q4084.0 -104 4122.0 -148.5Q4160.0 -193 4180.0 -249.0Q4200.0 -305 4200.0 -366Q4200.0 -430 4180.0 -486.0Q4160.0 -542 4121.5 -585.5Q4083.0 -629 4028.0 -654.0Q3973.0 -679 3904.0 -679Q3836.0 -679 3781.0 -654.0Q3726.0 -629 3687.5 -585.5Q3649.0 -542 3628.5 -486.0Q3608.0 -430 3608.0 -366Q3608.0 -305 3628.0 -249.0Q3648.0 -193 3686.0 -148.5Q3724.0 -104 3779.5 -78.5Q3835.0 -53 3904.0 -53Z" fill="currentColor"/><path d="M4639.0 0V-99H4733.0V0Z" fill="#ff2d2d"/>
 </svg>
   <h1 id="title">Alveo private beta</h1>
-  <p class="center" id="lede">The Alveo beta is invite-only. Open the personal link from your invite, or enter your invite code.</p>
+  <p class="center" id="lede">Alveo notices when you vape at your desk and helps you cut down, and possibly quit.</p>
 
   <section class="card" id="stepCode">
-    <label for="code">Invite code</label>
+    <p style="color:var(--ink)"><strong>Already have an access code?</strong></p>
+    <label for="code">Access code (from your invite email)</label>
     <input id="code" placeholder="ALV-XXXXXX-XXXXXX" autocomplete="off" spellcheck="false">
     <button id="codeNext">Continue</button>
+    <div class="msg" id="codeMsg" role="status"></div>
   </section>
 
   <section class="card" id="stepRequest">
-    <p style="color:var(--ink)"><strong>No invite yet? Request access.</strong></p>
+    <p style="color:var(--ink)"><strong>No code yet? Request access.</strong></p>
     <p class="fine">The beta is small and for people who want to help train Alveo: it shares the short mouth-area clips
       from alerts you answer (deleted after 6 months). US only for now, 18+.</p>
     <label for="rqName">Name</label><input id="rqName" maxlength="80" autocomplete="name">
@@ -32,32 +34,23 @@
     <div class="msg" id="rqMsg" role="status"></div>
   </section>
 
-  <section class="card" id="stepEmail" hidden>
-    <p>To make sure this invite is yours, enter the email address it was sent to. We'll email you a 6-digit code.</p>
-    <label for="email">Your email</label>
-    <input id="email" type="email" inputmode="email" autocomplete="email" placeholder="you@example.com">
-    <button id="sendCode">Email me a code</button>
-    <div class="msg" id="emailMsg" role="status"></div>
-  </section>
-
-  <section class="card" id="stepOtp" hidden>
-    <p id="otpLede">We sent a 6-digit code to your email. It expires in 10 minutes.</p>
-    <label for="otp">6-digit code</label>
-    <input id="otp" class="otp" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="••••••">
-    <button id="download">Download Alveo for Mac</button>
-    <div class="row"><button class="ghost small" id="resend">Send a new code</button></div>
-    <div class="msg" id="otpMsg" role="status"></div>
+  <section class="card" id="stepReady" hidden>
+    <p>Your access code:</p>
+    <div class="code" id="readyCode"></div>
+    <p class="fine">It downloads once, so keep the file. The app asks for this same code once, then works on this Mac only.</p>
+    <button id="download">Download now</button>
+    <div class="msg" id="dlMsg" role="status"></div>
   </section>
 
   <section class="card" id="stepDone" hidden>
-    <p style="color:var(--ink)"><strong>Your download has started.</strong> This invite can only be downloaded once, so keep the file.</p>
+    <p style="color:var(--ink)"><strong>Your download has started.</strong></p>
     <ol class="steps">
-      <li>Open <b>Alveo-beta.dmg</b> and drag Alveo into Applications.</li>
-      <li>Open Alveo. It asks for your invite code once, then locks to this Mac:</li>
+      <li>Open <b>Alveo-0.1.0-beta.dmg</b> and drag Alveo into Applications.</li>
+      <li>Open Alveo and enter your access code when it asks:</li>
     </ol>
     <div class="code" id="yourCode"></div>
-    <div class="row"><button class="ghost small" id="copyCode">Copy invite code</button></div>
-    <p class="fine">If the download didn't start, <a id="again" href="#" style="color:var(--ink-2)">use this link</a> (valid for a few minutes). Questions: support@getalveo.app</p>
+    <div class="row"><button class="ghost small" id="copyCode">Copy code</button></div>
+    <p class="fine">If the download didn't start, <a id="again" href="#" style="color:var(--ink-2)">use this link</a> (it works for a few minutes). Questions: support@getalveo.app</p>
   </section>
 
   <p class="fine center">The beta shares the short mouth-area clips from alerts you answer, to help train Alveo. You'll confirm this in the app.
@@ -67,24 +60,40 @@
 <script>
 (() => {
   const C = window.ALVEO_BETA, $ = id => document.getElementById(id);
-  const show = id => ["stepCode", "stepEmail", "stepOtp", "stepDone", "stepRequest"].forEach(s => $(s).hidden = !(s === id || (id === "stepCode" && s === "stepRequest")));
+  const steps = ["stepCode", "stepRequest", "stepReady", "stepDone"];
+  const show = (...ids) => steps.forEach(s => $(s).hidden = !ids.includes(s));
   const norm = s => String(s || "").trim().toUpperCase();
   const valid = c => /^ALV-[0-9A-F]{6}-[0-9A-F]{6}$/.test(c);
-  let code = norm(decodeURIComponent(location.hash.slice(1))), email = "", dlUrl = "";
+  const say = (el, text, cls) => { $(el).textContent = text; $(el).className = "msg " + (cls || ""); };
   async function call(fn, body) {
     try {
       const r = await fetch(`${C.functions}/${fn}`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
       return await r.json();
     } catch { return { ok: false, error: "Couldn't reach the server. Check your connection and try again." }; }
   }
-  const say = (el, text, cls) => { $(el).textContent = text; $(el).className = "msg " + (cls || ""); };
-  function goEmail() {
-    show("stepEmail"); $("title").textContent = "You're invited to the Alveo beta";
-    $("lede").textContent = "Alveo notices when you vape at your desk and helps you cut down, and possibly quit."; $("email").focus();
+  let code = "";
+  async function openCode(c, msgEl) {
+    c = norm(c);
+    if (!valid(c)) { say(msgEl, "That doesn't look like an access code. It looks like ALV-1A2B3C-4D5E6F.", "err"); return; }
+    say(msgEl, "Checking…");
+    const r = await call("beta-download", { code: c, check: true });
+    if (!r.ok) { say(msgEl, r.error || "Something went wrong.", "err"); show("stepCode", "stepRequest"); return; }
+    code = c; history.replaceState(null, "", "#" + c);
+    $("title").textContent = r.name ? `Hi ${r.name}, you're invited` : "You're invited to the Alveo beta";
+    $("readyCode").textContent = c; say(msgEl, ""); show("stepReady"); $("download").focus();
   }
-  if (valid(code)) goEmail(); else if (code) $("code").value = code;
-  $("codeNext").onclick = () => { code = norm($("code").value); if (!valid(code)) { $("code").focus(); return; } history.replaceState(null, "", "#" + code); goEmail(); };
+  $("codeNext").onclick = () => openCode($("code").value, "codeMsg");
   $("code").addEventListener("keydown", e => e.key === "Enter" && $("codeNext").click());
+  $("download").onclick = async () => {
+    $("download").disabled = true; say("dlMsg", "Preparing your download…");
+    const r = await call("beta-download", { code });
+    $("download").disabled = false;
+    if (!r.ok) { say("dlMsg", r.error || "Something went wrong.", "err"); return; }
+    $("yourCode").textContent = code; $("again").href = r.url; show("stepDone");
+    $("title").textContent = r.name ? `You're in, ${r.name}` : "You're in";
+    location.href = r.url;
+  };
+  $("copyCode").onclick = async () => { try { await navigator.clipboard.writeText(code); $("copyCode").textContent = "Copied"; } catch { getSelection().selectAllChildren($("yourCode")); } };
   $("rqSend").onclick = async () => {
     const name = $("rqName").value.trim(), email = $("rqEmail").value.trim();
     if (!name || !$("rqEmail").checkValidity() || !email) { say("rqMsg", "Please enter your name and a valid email address.", "err"); return; }
@@ -93,31 +102,10 @@
     $("rqSend").disabled = false;
     if (!r.ok) { say("rqMsg", r.error || "Something went wrong.", "err"); return; }
     ["rqName", "rqEmail", "rqNote"].forEach(id => $(id).value = "");
-    say("rqMsg", "Thanks! We got your request. If there's a spot, you'll get an email with your personal invite.", "ok");
+    say("rqMsg", "Thanks! We got your request. If there's a spot, you'll get an email with your access code.", "ok");
   };
-  async function sendCode(btn, msgEl) {
-    email = $("email").value.trim().toLowerCase();
-    if (!$("email").checkValidity() || !email) { say(msgEl, "Please enter a valid email address.", "err"); return false; }
-    btn.disabled = true; say(msgEl, "Sending…");
-    const r = await call("beta-request-code", { code, email }); btn.disabled = false;
-    if (!r.ok) { say(msgEl, r.error || "Something went wrong.", "err"); return false; }
-    if (r.name) $("title").textContent = `Hi ${r.name}, you're invited`;
-    $("otpLede").textContent = `We sent a 6-digit code to ${email}. It expires in 10 minutes.`; return true;
-  }
-  $("sendCode").onclick = async () => { if (await sendCode($("sendCode"), "emailMsg")) { show("stepOtp"); $("otp").focus(); } };
-  $("email").addEventListener("keydown", e => e.key === "Enter" && $("sendCode").click());
-  $("resend").onclick = async () => { if (await sendCode($("resend"), "otpMsg")) say("otpMsg", "New code sent.", "ok"); };
-  $("download").onclick = async () => {
-    const otp = $("otp").value.replace(/\D/g, "");
-    if (otp.length !== 6) { say("otpMsg", "Enter the 6-digit code from the email.", "err"); return; }
-    $("download").disabled = true; say("otpMsg", "Checking…");
-    const r = await call("beta-download", { code, email, otp }); $("download").disabled = false;
-    if (!r.ok) { say("otpMsg", r.error || "Something went wrong.", "err"); return; }
-    dlUrl = r.url; $("yourCode").textContent = code; $("again").href = dlUrl; show("stepDone");
-    $("title").textContent = r.name ? `You're in, ${r.name}` : "You're in"; location.href = dlUrl;
-  };
-  $("otp").addEventListener("keydown", e => e.key === "Enter" && $("download").click());
-  $("copyCode").onclick = async () => { try { await navigator.clipboard.writeText(code); $("copyCode").textContent = "Copied"; } catch { getSelection().selectAllChildren($("yourCode")); } };
+  const fromLink = norm(decodeURIComponent(location.hash.slice(1)));
+  if (valid(fromLink)) { $("code").value = fromLink; openCode(fromLink, "codeMsg"); }
 })();
 </script>
 </body>
