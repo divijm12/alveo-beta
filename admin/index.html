@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Alveo beta admin</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" type="image/png" href="../favicon.png"><link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<main class="wrap wide">
+  <div class="row" style="justify-content:space-between"><svg class="wm" role="img" aria-label="Alveo" style="width:150px" xmlns="http://www.w3.org/2000/svg" viewBox="-7 -789 4780 846">
+<path d="M33 0 302 -730H438L716 0H638L379 -682L420 -661H315L358 -682L109 0ZM177 -232 202 -301H541L567 -232Z" fill="currentColor"/><path d="M1083.0 0V-730H1159.0V0ZM1139.0 0V-69H1482.0V0Z" fill="currentColor"/><path d="M2013.0 0 1752.0 -730H1830.0L2072.0 -47L2031.0 -69H2137.0L2093.0 -47L2318.0 -730H2395.0L2150.0 0Z" fill="currentColor"/><path d="M2761.0 0V-730H2837.0V0ZM2819.0 0V-69H3184.0V0ZM2819.0 -337V-405H3150.0V-337ZM2819.0 -661V-730H3173.0V-661Z" fill="currentColor"/><path d="M3904.0 17Q3809.0 17 3739.0 -17.0Q3669.0 -51 3623.0 -107.0Q3577.0 -163 3554.0 -229.0Q3531.0 -295 3531.0 -358V-376Q3531.0 -443 3554.5 -509.5Q3578.0 -576 3625.0 -630.0Q3672.0 -684 3742.0 -716.5Q3812.0 -749 3904.0 -749Q3997.0 -749 4066.5 -716.5Q4136.0 -684 4183.0 -630.0Q4230.0 -576 4253.5 -509.5Q4277.0 -443 4277.0 -376V-357Q4277.0 -294 4254.5 -228.5Q4232.0 -163 4185.5 -107.0Q4139.0 -51 4069.0 -17.0Q3999.0 17 3904.0 17ZM3904.0 -53Q3974.0 -53 4029.0 -78.5Q4084.0 -104 4122.0 -148.5Q4160.0 -193 4180.0 -249.0Q4200.0 -305 4200.0 -366Q4200.0 -430 4180.0 -486.0Q4160.0 -542 4121.5 -585.5Q4083.0 -629 4028.0 -654.0Q3973.0 -679 3904.0 -679Q3836.0 -679 3781.0 -654.0Q3726.0 -629 3687.5 -585.5Q3649.0 -542 3628.5 -486.0Q3608.0 -430 3608.0 -366Q3608.0 -305 3628.0 -249.0Q3648.0 -193 3686.0 -148.5Q3724.0 -104 3779.5 -78.5Q3835.0 -53 3904.0 -53Z" fill="currentColor"/><path d="M4639.0 0V-99H4733.0V0Z" fill="#ff2d2d"/>
+</svg><span class="fine" id="who"></span></div>
+
+  <section class="card" id="signin" style="max-width:30rem">
+    <h1 style="text-align:left">Beta admin</h1>
+    <p>Only the Alveo team can sign in here. We'll email you a sign-in link.</p>
+    <label for="adminEmail">Your email</label>
+    <input id="adminEmail" type="email" autocomplete="email" placeholder="you@example.com">
+    <button id="sendLink">Email me a sign-in link</button>
+    <div class="msg" id="signinMsg" role="status"></div>
+  </section>
+
+  <section class="card" id="notAdmin" hidden><p>This account isn't a beta admin.</p><button class="ghost" id="out1">Sign out</button></section>
+
+  <section id="panel" hidden style="display:grid;gap:22px">
+    <section class="card">
+      <h1 style="text-align:left;font-size:1.25rem">New invite</h1>
+      <p class="fine">Only invite people who agreed to share data. One invite = one download + one Mac. The link expires in 30 days if unused.</p>
+      <div class="row">
+        <input id="invName" placeholder="Name (shown to them)" maxlength="80">
+        <input id="invEmail" type="email" placeholder="Their email (they'll verify it)">
+        <button id="create">Create invite</button>
+      </div>
+      <div class="msg" id="createMsg" role="status"></div>
+      <div id="newInvite" hidden style="display:grid;gap:10px">
+        <div class="code" id="newLink"></div>
+        <div class="row"><button class="ghost small" id="copyLink">Copy link</button><button class="ghost small" id="copyMsg">Copy message to send</button></div>
+      </div>
+    </section>
+    <section class="card">
+      <div class="row" style="justify-content:space-between"><h1 style="text-align:left;font-size:1.25rem">Invites</h1><button class="ghost small" id="refresh">Refresh</button></div>
+      <div class="scroll"><table><thead><tr><th>Who</th><th>Status</th><th>Clips shared</th><th>Created</th><th></th></tr></thead><tbody id="rows"></tbody></table></div>
+    </section>
+    <div class="row"><button class="ghost small" id="out2">Sign out</button></div>
+  </section>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="../config.js"></script>
+<script>
+(async () => {
+  const C = window.ALVEO_BETA, $ = id => document.getElementById(id);
+  const sb = supabase.createClient(C.supabaseUrl, C.publishableKey);
+  const say = (el, text, cls) => { $(el).textContent = text; $(el).className = "msg " + (cls || ""); };
+  const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  const day = t => t ? new Date(t).toLocaleDateString(undefined, { month: "short", day: "numeric" }) : "";
+  const linkFor = code => `https://beta.getalveo.app/#${code}`;
+  async function signOut() { await sb.auth.signOut(); location.reload(); }
+  $("out1").onclick = signOut; $("out2").onclick = signOut;
+
+  $("sendLink").onclick = async () => {
+    const email = $("adminEmail").value.trim().toLowerCase();
+    if (!email) return say("signinMsg", "Enter your email.", "err");
+    $("sendLink").disabled = true;
+    const { error } = await sb.auth.signInWithOtp({ email, options: { shouldCreateUser: false, emailRedirectTo: location.origin + "/admin/" } });
+    $("sendLink").disabled = false;
+    say("signinMsg", error ? "Couldn't send the link. Is this an admin email?" : "Check your inbox for the sign-in link.", error ? "err" : "ok");
+  };
+
+  const { data: { session } } = await sb.auth.getSession();
+  if (!session) return;                                   // stay on the sign-in card
+  $("signin").hidden = true; $("who").textContent = session.user.email;
+  const { data: me } = await sb.from("beta_admins").select("email");   // RLS: only admins see rows
+  if (!me || !me.length) { $("notAdmin").hidden = false; return; }
+  $("panel").hidden = false;
+
+  async function load() {
+    const { data: inv, error } = await sb.from("beta_invites").select("*").order("created_at", { ascending: false });
+    if (error) { $("rows").innerHTML = `<tr><td colspan="5">Couldn't load invites: ${esc(error.message)}</td></tr>`; return; }
+    const { data: clips } = await sb.from("beta_clips").select("invite_id");
+    const n = {}; (clips || []).forEach(c => n[c.invite_id] = (n[c.invite_id] || 0) + 1);
+    $("rows").innerHTML = inv.map(i => {
+      const expired = !i.downloaded_at && new Date(i.expires_at) < new Date();
+      const status = i.revoked ? '<span class="pill red">Revoked</span>'
+        : i.activated_at ? `<span class="pill ok">Active</span> <span class="sub">since ${day(i.activated_at)}</span>`
+        : i.downloaded_at ? `<span class="pill">Downloaded</span> <span class="sub">${day(i.downloaded_at)}</span>`
+        : expired ? '<span class="pill">Expired</span>' : '<span class="pill">Not downloaded yet</span>';
+      const consent = i.activated_at && !i.consent_at ? ' <span class="sub">(sharing off)</span>' : "";
+      return `<tr><td><b>${esc(i.name) || "-"}</b><br><span class="sub">${esc(i.email)}</span><br><span class="sub">${esc(i.code)}</span></td>
+        <td>${status}</td><td>${n[i.id] || 0}${consent}</td><td>${day(i.created_at)}<br><span class="sub">by ${esc(i.created_by.split("@")[0])}</span></td>
+        <td><div class="row"><button class="ghost small" data-copy="${esc(i.code)}">Copy link</button>
+        <button class="ghost small" data-act="${i.revoked ? "unrevoke" : "revoke"}" data-id="${i.id}">${i.revoked ? "Restore" : "Revoke"}</button>
+        ${i.downloaded_at ? `<button class="ghost small" data-act="reset" data-id="${i.id}" title="Allow one more download and a new Mac">Reset</button>` : ""}</div></td></tr>`;
+    }).join("") || '<tr><td colspan="5" class="sub">No invites yet. Create the first one above.</td></tr>';
+  }
+  $("rows").addEventListener("click", async e => {
+    const b = e.target.closest("button"); if (!b) return;
+    if (b.dataset.copy) { try { await navigator.clipboard.writeText(linkFor(b.dataset.copy)); b.textContent = "Copied"; } catch {} return; }
+    const id = b.dataset.id, act = b.dataset.act;
+    if (act === "reset" && b.textContent !== "Sure?") { b.textContent = "Sure?"; return; }       // two-click confirm (no dialogs)
+    const patch = act === "revoke" ? { revoked: true } : act === "unrevoke" ? { revoked: false }
+      : { downloaded_at: null, device_hash: null, activated_at: null };
+    await sb.from("beta_invites").update(patch).eq("id", id); load();
+  });
+  $("refresh").onclick = load;
+
+  let lastMsg = "";
+  $("create").onclick = async () => {
+    const name = $("invName").value.trim(), email = $("invEmail").value.trim().toLowerCase();
+    if (!email || !$("invEmail").checkValidity()) return say("createMsg", "Enter their email address.", "err");
+    $("create").disabled = true;
+    const { data, error } = await sb.from("beta_invites").insert({ name: name || null, email }).select("code").single();
+    $("create").disabled = false;
+    if (error) return say("createMsg", "Couldn't create the invite: " + error.message, "err");
+    const link = linkFor(data.code); say("createMsg", "Invite created.", "ok");
+    $("newLink").textContent = link; $("newInvite").hidden = false;
+    lastMsg = `Hey${name ? " " + name : ""}! Here's your personal invite to the Alveo beta: ${link}\nIt's only for you: you'll confirm with your email (${email}), it downloads once, and it works on one Mac. As we discussed, the beta shares the short clips from alerts you answer to help train Alveo.`;
+    $("invName").value = ""; $("invEmail").value = ""; load();
+  };
+  $("copyLink").onclick = async () => { try { await navigator.clipboard.writeText($("newLink").textContent); $("copyLink").textContent = "Copied"; } catch {} };
+  $("copyMsg").onclick = async () => { try { await navigator.clipboard.writeText(lastMsg); $("copyMsg").textContent = "Copied"; } catch {} };
+  load();
+})();
+</script>
+</body>
+</html>
