@@ -62,7 +62,12 @@
   const C = window.ALVEO_BETA, $ = id => document.getElementById(id);
   const steps = ["stepCode", "stepRequest", "stepReady", "stepDone"];
   const show = (...ids) => steps.forEach(s => $(s).hidden = !ids.includes(s));
-  const norm = s => String(s || "").trim().toUpperCase();
+  // The code out of whatever was pasted: words around it, spaces, line breaks, lower case, look-alike dashes.
+  const norm = s => {
+    const t = String(s || "").replace(/[\u2010-\u2015\u2212\uFE58\uFE63\uFF0D]/g, "-").toUpperCase();
+    const m = t.match(/ALV\s*-\s*([0-9A-F]{6})\s*-\s*([0-9A-F]{6})/);
+    return m ? `ALV-${m[1]}-${m[2]}` : t.replace(/\s+/g, "");
+  };
   const valid = c => /^ALV-[0-9A-F]{6}-[0-9A-F]{6}$/.test(c);
   const say = (el, text, cls) => { $(el).textContent = text; $(el).className = "msg " + (cls || ""); };
   async function call(fn, body) {
@@ -84,6 +89,7 @@
   }
   $("codeNext").onclick = () => openCode($("code").value, "codeMsg");
   $("code").addEventListener("keydown", e => e.key === "Enter" && $("codeNext").click());
+  $("code").addEventListener("paste", () => setTimeout(() => { $("code").value = norm($("code").value); }, 0));
   $("download").onclick = async () => {
     $("download").disabled = true; say("dlMsg", "Preparing your download…");
     const r = await call("beta-download", { code });
