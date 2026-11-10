@@ -5,7 +5,7 @@
    (the beta page puts tester names in the title), never on /admin/. Events carry no names, emails or codes.
    The same file is in alveo-site and alveo-beta: keep them identical. */
 (() => {
-  const ID = "";                                   // GA4 Measurement ID, e.g. "G-XXXXXXXXXX" (public, not a secret)
+  const ID = "G-X8DBJDHBE8";                                 // GA4 Measurement ID, e.g. "G-XXXXXXXXXX" (public, not a secret)
   const KEY = "alveo_analytics";                   // "yes" | "no"
   if (!ID || location.pathname.startsWith("/admin")) { window.alveoTrack = () => {}; window.alveoCookies = () => {}; return; }
 
