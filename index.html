@@ -38,23 +38,29 @@
   <section class="card" id="stepReady" hidden>
     <p>Your access code:</p>
     <div class="code" id="readyCode"></div>
-    <p class="fine">It downloads once, so keep the file. The app asks for this same code once, then works on this Mac only.</p>
-    <button id="download">Download now</button>
+    <p class="fine">It downloads once, so pick the computer you'll use and keep the file. The app asks for this same code once, then works on that computer only.</p>
+    <button id="download">Download for Mac</button>
+    <div class="row" style="margin-top:10px"><button class="ghost small" id="downloadOther">Download for Windows instead</button></div>
     <div class="msg" id="dlMsg" role="status"></div>
   </section>
 
   <section class="card" id="stepDone" hidden>
     <p style="color:var(--ink)"><strong>Your download has started.</strong></p>
-    <ol class="steps">
+    <ol class="steps" id="stepsMac">
       <li>Open the Alveo file you just downloaded and drag Alveo into Applications.</li>
       <li>Open Alveo and enter your access code when it asks:</li>
+    </ol>
+    <ol class="steps" id="stepsWin" hidden>
+      <li>Open the Alveo-Setup file you just downloaded and click through the installer.</li>
+      <li>If Windows says "Windows protected your PC", click <strong>More info</strong>, then <strong>Run anyway</strong> (the beta isn't signed with a certificate yet).</li>
+      <li>Alveo opens by itself. Enter your access code when it asks:</li>
     </ol>
     <div class="code" id="yourCode"></div>
     <div class="row"><button class="ghost small" id="copyCode">Copy code</button></div>
     <p class="fine">If the download didn't start, <a id="again" href="#" style="color:var(--ink-2)">use this link</a> (it works for a few minutes). Questions: support@getalveo.app</p>
   </section>
 
-  <p class="fine center">Mac only for now. Questions: support@getalveo.app · <a href="#" onclick="window.alveoCookies&&alveoCookies();return false" style="color:var(--ink-3)">Cookies</a></p>
+  <p class="fine center">For Mac and Windows. Questions: support@getalveo.app · <a href="#" onclick="window.alveoCookies&&alveoCookies();return false" style="color:var(--ink-3)">Cookies</a></p>
 </main>
 <script src="config.js"></script>
 <script>
@@ -90,15 +96,22 @@
   $("codeNext").onclick = () => openCode($("code").value, "codeMsg");
   $("code").addEventListener("keydown", e => e.key === "Enter" && $("codeNext").click());
   $("code").addEventListener("paste", () => setTimeout(() => { $("code").value = norm($("code").value); }, 0));
-  $("download").onclick = async () => {
-    $("download").disabled = true; say("dlMsg", "Preparing your download…");
-    const r = await call("beta-download", { code });
-    $("download").disabled = false;
+  // Main button = this visitor's computer; the other one sits below ("instead"): a code downloads only once.
+  const isWin = /windows/i.test((navigator.userAgentData && navigator.userAgentData.platform) || navigator.userAgent);
+  const NAME = { mac: "Mac", win: "Windows" }, mine = isWin ? "win" : "mac", other = isWin ? "mac" : "win";
+  $("download").textContent = `Download for ${NAME[mine]}`; $("downloadOther").textContent = `Download for ${NAME[other]} instead`;
+  async function download(platform) {
+    $("download").disabled = $("downloadOther").disabled = true; say("dlMsg", "Preparing your download…");
+    const r = await call("beta-download", { code, platform });
+    $("download").disabled = $("downloadOther").disabled = false;
     if (!r.ok) { say("dlMsg", r.error || "Something went wrong.", "err"); return; }
+    $("stepsMac").hidden = platform !== "mac"; $("stepsWin").hidden = platform !== "win";
     $("yourCode").textContent = code; $("again").href = r.url; show("stepDone"); window.alveoTrack && alveoTrack("beta_download");
     $("title").textContent = r.name ? `You're in, ${r.name}` : "You're in";
     location.href = r.url;
-  };
+  }
+  $("download").onclick = () => download(mine);
+  $("downloadOther").onclick = () => download(other);
   $("copyCode").onclick = async () => { try { await navigator.clipboard.writeText(code); $("copyCode").textContent = "Copied"; } catch { getSelection().selectAllChildren($("yourCode")); } };
   $("rqSend").onclick = async () => {
     const name = $("rqName").value.trim(), email = $("rqEmail").value.trim();

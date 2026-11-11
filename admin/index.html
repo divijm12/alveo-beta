@@ -33,7 +33,7 @@
     </section>
     <section class="card">
       <h1 style="text-align:left;font-size:1.25rem">New invite</h1>
-      <p class="fine">Only invite people who agreed to share data. One invite = one download + one Mac. The link expires in 30 days if unused.</p>
+      <p class="fine">Only invite people who agreed to share data. One invite = one download + one computer (Mac or Windows). The link expires in 30 days if unused.</p>
       <div class="row">
         <input id="invName" placeholder="Name (shown to them)" maxlength="80">
         <input id="invEmail" type="email" placeholder="Their email (they'll verify it)">
@@ -151,26 +151,32 @@
     return m < 2 ? "just now" : m < 60 ? `${m} min ago` : m < 48 * 60 ? `${Math.round(m / 60)} h ago` : `${Math.round(m / 1440)} days ago`; };
   const vnum = v => String(v || "").split(".").map(n => parseInt(n, 10) || 0);
   const vcmp = (a, b) => { const x = vnum(a), y = vnum(b); for (let k = 0; k < Math.max(x.length, y.length); k++) { const d = (x[k] || 0) - (y[k] || 0); if (d) return d; } return 0; };
-  function versions(inv, rel) {
-    $("latest").textContent = rel?.short_version ? `Latest beta: ${rel.short_version} (build ${rel.build})` : "";
+  // rels: one beta_release row per platform (no platform column = before the platforms migration = the Mac).
+  // A tester is compared with THEIR platform's latest build; not reported yet = compared with the Mac.
+  const PLAT = { mac: "Mac", win: "Windows" };
+  function versions(inv, rels) {
+    const relOf = p => (rels || []).find(r => (r.platform || "mac") === p);
+    $("latest").textContent = ["mac", "win"].map(p => relOf(p)).filter(r => r?.short_version)
+      .map(r => `${PLAT[r.platform || "mac"]} ${r.short_version} (build ${r.build})`).join(" · ").replace(/^(?=.)/, "Latest beta: ");
     const active = inv.filter(i => i.activated_at && !i.revoked)
       .sort((a, b) => new Date(b.app_seen_at || b.last_seen_at || 0) - new Date(a.app_seen_at || a.last_seen_at || 0));
     $("verRows").innerHTML = active.map(i => {
-      const v = i.app_version, seen = i.app_seen_at || i.last_seen_at;
+      const v = i.app_version, seen = i.app_seen_at || i.last_seen_at, rel = relOf(i.app_platform || "mac");
       const stale = seen && Date.now() - new Date(seen) > 48 * 3600e3;
       const behind = v && rel?.short_version && (vcmp(v, rel.short_version) < 0
         || (vcmp(v, rel.short_version) === 0 && i.app_build && rel.build && +i.app_build < +rel.build));
       const pill = !v ? '<span class="pill">Not reported yet</span>'
         : behind ? '<span class="pill red">Behind</span>' : rel?.short_version ? '<span class="pill ok">Up to date</span>' : "";
+      const plat = PLAT[i.app_platform] ? `<span class="pill">${PLAT[i.app_platform]}</span> ` : "";
       return `<tr><td><b>${esc(i.name) || "-"}</b><br><span class="sub">${esc(i.email)}</span></td>
-        <td>${v ? `<b>${esc(v)}</b>${i.app_build ? ` <span class="sub">build ${esc(i.app_build)}</span>` : ""}<br>` : ""}${pill}</td>
+        <td>${plat}${v ? `<b>${esc(v)}</b>${i.app_build ? ` <span class="sub">build ${esc(i.app_build)}</span>` : ""}<br>` : ""}${pill}</td>
         <td>${seen ? esc(ago(seen)) : "-"}${stale ? '<br><span class="sub">app not running lately</span>' : ""}</td></tr>`;
     }).join("") || '<tr><td colspan="3" class="sub">No active testers yet.</td></tr>';
   }
 
   async function load() {
     const { data: inv, error } = await sb.from("beta_invites").select("*").order("created_at", { ascending: false });
-    if (!error) { const { data: rel } = await sb.from("beta_release").select("short_version, build").maybeSingle(); versions(inv, rel); }
+    if (!error) { const { data: rels } = await sb.from("beta_release").select("*"); versions(inv, rels); }
     if (error) { $("rows").innerHTML = `<tr><td colspan="5">Couldn't load invites: ${esc(error.message)}</td></tr>`; return; }
     const { data: clips } = await sb.from("beta_clips").select("invite_id");
     const n = {}; (clips || []).forEach(c => n[c.invite_id] = (n[c.invite_id] || 0) + 1);
@@ -188,7 +194,7 @@
         ${!i.revoked && !i.downloaded_at ? `<button class="ghost small" data-act="email" data-id="${i.id}">${i.emailed_at ? "Resend email" : "Email it"}</button>` : ""}
         <button class="ghost small" data-act="${i.revoked ? "unrevoke" : "revoke"}" data-id="${i.id}">${i.revoked ? "Restore" : "Revoke"}</button>
         ${n[i.id] && canViewClips ? `<button class="small" data-act="clips" data-id="${i.id}" data-name="${esc(i.name || i.email)}">View clips</button>` : ""}
-        ${i.downloaded_at ? `<button class="ghost small" data-act="reset" data-id="${i.id}" title="Allow one more download and a new Mac">Reset</button>` : ""}</div></td></tr>`;
+        ${i.downloaded_at ? `<button class="ghost small" data-act="reset" data-id="${i.id}" title="Allow one more download and a new computer">Reset</button>` : ""}</div></td></tr>`;
     }).join("") || '<tr><td colspan="5" class="sub">No invites yet. Create the first one above.</td></tr>';
   }
   $("rows").addEventListener("click", async e => {
@@ -221,7 +227,7 @@
     }
     say("createMsg", note, note.includes("failed") ? "err" : "ok");
     $("newLink").textContent = link; $("newInvite").hidden = false;
-    lastMsg = `Hey${name ? " " + name : ""}! Here's your personal invite to the Alveo beta: ${link}\nIt's only for you: you'll confirm with your email (${email}), it downloads once, and it works on one Mac. As we discussed, the beta shares the short clips from alerts you answer to help train Alveo.`;
+    lastMsg = `Hey${name ? " " + name : ""}! Here's your personal invite to the Alveo beta: ${link}\nIt's only for you: you'll confirm with your email (${email}), it downloads once, and it works on one computer (Mac or Windows). As we discussed, the beta shares the short clips from alerts you answer to help train Alveo.`;
     $("invName").value = ""; $("invEmail").value = ""; load();
   };
   $("copyLink").onclick = async () => { try { await navigator.clipboard.writeText($("newLink").textContent); $("copyLink").textContent = "Copied"; } catch {} };
