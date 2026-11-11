@@ -97,6 +97,9 @@
   $("signin").hidden = true; $("who").textContent = session.user.email;
   const { data: me } = await sb.from("beta_admins").select("email");   // RLS: only admins see rows
   if (!me || !me.length) { $("notAdmin").hidden = false; return; }
+  // Clip viewing is a separate permission (owner only); the server enforces it too, this just hides the buttons.
+  const { data: mine } = await sb.from("beta_admins").select("can_view_clips").eq("email", session.user.email.toLowerCase()).maybeSingle();
+  const canViewClips = mine?.can_view_clips === true;
   $("panel").hidden = false;
 
   async function fn(name, body) {
@@ -184,7 +187,7 @@
         <td><div class="row"><button class="ghost small" data-copy="${esc(i.code)}">Copy link</button>
         ${!i.revoked && !i.downloaded_at ? `<button class="ghost small" data-act="email" data-id="${i.id}">${i.emailed_at ? "Resend email" : "Email it"}</button>` : ""}
         <button class="ghost small" data-act="${i.revoked ? "unrevoke" : "revoke"}" data-id="${i.id}">${i.revoked ? "Restore" : "Revoke"}</button>
-        ${n[i.id] ? `<button class="small" data-act="clips" data-id="${i.id}" data-name="${esc(i.name || i.email)}">View clips</button>` : ""}
+        ${n[i.id] && canViewClips ? `<button class="small" data-act="clips" data-id="${i.id}" data-name="${esc(i.name || i.email)}">View clips</button>` : ""}
         ${i.downloaded_at ? `<button class="ghost small" data-act="reset" data-id="${i.id}" title="Allow one more download and a new Mac">Reset</button>` : ""}</div></td></tr>`;
     }).join("") || '<tr><td colspan="5" class="sub">No invites yet. Create the first one above.</td></tr>';
   }
