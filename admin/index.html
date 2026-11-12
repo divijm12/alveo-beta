@@ -62,6 +62,15 @@
       <p class="fine">Shared by this tester under the beta agreement, for training Alveo. Links expire after 10 minutes; nothing is saved.</p>
       <div class="row" id="clipList"></div>
       <div id="clipStage" style="display:grid;gap:12px"></div>
+      <div id="relabel" class="row" hidden style="gap:8px;align-items:center">
+        <span class="sub">Training label:</span>
+        <button class="ghost small" data-label="vape">Vape</button>
+        <button class="ghost small" data-label="not_vape">Not a vape</button>
+        <button class="ghost small" data-label="exclude">Exclude</button>
+        <button class="ghost small" data-label="">Use tester's answer</button>
+        <span class="sub" id="relabelMsg"></span>
+      </div>
+      <p class="fine" id="relabelNote" hidden>Fixes only what the model trains on. The tester's answer, app and counts don't change.</p>
     </section>
     <div class="row"><button class="ghost small" id="out2">Sign out</button></div>
   </section>
@@ -135,9 +144,24 @@
     const r = await fn("beta-admin-clips", { invite_id: inviteId });
     if (!r.ok) { $("clipList").textContent = r.error || "Couldn't load clips."; return; }
     const label = { yes: "Yes", no: "No", missed_yes: "Near miss: yes", missed_no: "Near miss: no" };
-    $("clipList").innerHTML = r.clips.map((c, k) => `<button class="ghost small" data-clip="${k}">${new Date(c.created_at).toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })} · ${label[c.answer] || c.answer}</button>`).join("") || "No clips yet.";
+    const fixed = { vape: "Vape", not_vape: "Not a vape", exclude: "Excluded" };
+    const item = c => `${new Date(c.created_at).toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })} · ${label[c.answer] || c.answer}${c.label_override ? ` → ${fixed[c.label_override]} (fixed)` : ""}`;
+    let cur = -1;
+    const paintList = () => { $("clipList").innerHTML = r.clips.map((c, k) => `<button class="${k === cur ? "small" : "ghost small"}" data-clip="${k}">${esc(item(c))}</button>`).join("") || "No clips yet."; };
+    const paintBar = () => {
+      const c = r.clips[cur]; $("relabel").hidden = $("relabelNote").hidden = !c;
+      if (c) $("relabel").querySelectorAll("button[data-label]").forEach(b => b.className = (b.dataset.label === (c.label_override || "")) ? "small" : "ghost small");
+    };
+    $("relabel").onclick = async e => {
+      const b = e.target.closest("button[data-label]"); const c = r.clips[cur]; if (!b || !c) return;
+      $("relabelMsg").textContent = "Saving…";
+      const res = await fn("beta-admin-clips", { action: "relabel", clip_id: c.id, label: b.dataset.label || null });
+      if (!res.ok) { $("relabelMsg").textContent = res.error || "Couldn't save."; return; }
+      c.label_override = res.label_override; $("relabelMsg").textContent = "Saved"; paintList(); paintBar();
+    };
+    paintList();
     const open = async k => {
-      const c = r.clips[k]; $("clipList").querySelectorAll("button").forEach((b, j) => b.className = j === k ? "small" : "ghost small");
+      const c = r.clips[k]; cur = k; paintList(); paintBar(); $("relabelMsg").textContent = "";
       if (!c.url) { $("clipStage").textContent = "This clip's link couldn't be created."; return; }
       try { const buf = await (await fetch(c.url)).arrayBuffer(); await AlveoClipViewer.render($("clipStage"), buf); }
       catch (e) { $("clipStage").textContent = "Couldn't open this clip: " + e.message; }
@@ -145,7 +169,7 @@
     $("clipList").onclick = e => { const b = e.target.closest("button[data-clip]"); if (b) open(+b.dataset.clip); };
     if (r.clips.length) open(0);
   }
-  $("viewerClose").onclick = () => { AlveoClipViewer.stop(); $("viewer").hidden = true; $("clipStage").textContent = ""; };
+  $("viewerClose").onclick = () => { AlveoClipViewer.stop(); $("viewer").hidden = true; $("clipStage").textContent = ""; $("relabel").hidden = $("relabelNote").hidden = true; };
 
   const ago = t => { if (!t) return ""; const m = Math.round((Date.now() - new Date(t)) / 60000);
     return m < 2 ? "just now" : m < 60 ? `${m} min ago` : m < 48 * 60 ? `${Math.round(m / 60)} h ago` : `${Math.round(m / 1440)} days ago`; };
