@@ -55,6 +55,9 @@
   .alveo-cc .link{all:unset;display:inline-block;margin-top:12px;color:#a1a1aa;font-size:12.5px;cursor:pointer;
     text-decoration:underline;text-underline-offset:3px;text-decoration-color:#4a4a52}
   .alveo-cc .link:hover{color:#f4f4f5}
+  .alveo-cc a.pp{white-space:nowrap;color:#a1a1aa;text-decoration:underline;text-underline-offset:3px;text-decoration-color:#4a4a52}
+  .alveo-cc a.pp:hover{color:#f4f4f5}
+  .alveo-cc a.pp:focus-visible{outline:2px solid #ff2d2d;outline-offset:2px}
   .alveo-cc .prefs{display:none;margin-top:14px;border-top:1px solid #26262a}
   .alveo-cc.open .prefs{display:block}.alveo-cc.open .link.more{display:none}
   .alveo-cc .opt{display:flex;gap:12px;align-items:flex-start;padding:12px 0;border-bottom:1px solid #26262a}
@@ -78,7 +81,7 @@
     const el = document.createElement("section");
     el.className = "alveo-cc"; el.setAttribute("role", "dialog"); el.setAttribute("aria-labelledby", "alveo-cc-t");
     el.innerHTML = `<h2 id="alveo-cc-t">Cookies</h2>
-      <p>We use analytics cookies to understand how people find Alveo. They're off unless you allow them.</p>
+      <p>We use analytics cookies to understand how people find Alveo. They're off unless you allow them. <a class="pp" href="https://getalveo.app/privacy.html">Privacy policy</a></p>
       <div class="prefs" id="alveo-cc-prefs">
         <div class="opt"><div><b>Essential</b><span>Remembers this choice. Stored only in your browser.</span></div><span class="tag">Always on</span></div>
         <div class="opt"><div><b>Analytics</b><span>Google Analytics: pages visited and how you got here. No ads.</span></div>
