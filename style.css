@@ -37,3 +37,9 @@ td .sub { color: var(--ink-3); font-size: .78rem; }
 .scroll { overflow-x: auto; }
 [hidden] { display: none !important; }
 .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+/* "Already have an access code?": small link under the request card; opens the code box. */
+.have { display: grid; gap: 12px; justify-items: center; }
+.have-form { width: 100%; display: grid; gap: 10px; }
+.have-form .row > button { flex: none; }
+.linkbtn { all: unset; cursor: pointer; -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent; font-size: .9rem; color: var(--ink-2); text-decoration: underline; text-underline-offset: 3px; text-decoration-color: #4a4a52; }
+.linkbtn:hover { color: var(--ink); background: none; } .linkbtn:focus-visible { outline: 2px solid var(--red); outline-offset: 2px; border-radius: 4px; }

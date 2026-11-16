@@ -15,16 +15,8 @@
   <h1 id="title">Private beta</h1>
   <p class="center" id="lede">An app that notices when you vape at your desk and helps you cut down, and possibly quit.</p>
 
-  <section class="card" id="stepCode">
-    <p style="color:var(--ink)"><strong>Already have an access code?</strong></p>
-    <label for="code" class="sr">Access code</label>
-    <input id="code" placeholder="ALV-XXXXXX-XXXXXX" autocomplete="off" spellcheck="false">
-    <button id="codeNext">Continue</button>
-    <div class="msg" id="codeMsg" role="status"></div>
-  </section>
-
   <section class="card" id="stepRequest">
-    <p style="color:var(--ink)"><strong>No code yet? Request access.</strong></p>
+    <p style="color:var(--ink)"><strong>Request access</strong></p>
     <p class="fine">The beta is small and for people who want to help train Alveo: it shares the short mouth-area clips
       from alerts you answer (deleted after 6 months). US only for now, 18+.</p>
     <label for="rqName">Name</label><input id="rqName" maxlength="80" autocomplete="name">
@@ -33,6 +25,18 @@
     <input id="rqCompany" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0">
     <button id="rqSend">Request access</button>
     <div class="msg" id="rqMsg" role="status"></div>
+  </section>
+
+  <section class="have" id="stepCode">
+    <button type="button" class="linkbtn" id="haveCode" aria-expanded="false" aria-controls="codeForm">Already have an access code?</button>
+    <div class="have-form" id="codeForm" hidden>
+      <div class="row">
+        <label for="code" class="sr">Access code</label>
+        <input id="code" placeholder="ALV-XXXXXX-XXXXXX" autocomplete="off" spellcheck="false">
+        <button class="ghost" id="codeNext">Continue</button>
+      </div>
+      <div class="msg" id="codeMsg" role="status"></div>
+    </div>
   </section>
 
   <section class="card" id="stepReady" hidden>
@@ -83,7 +87,15 @@
     } catch { return { ok: false, error: "Couldn't reach the server. Check your connection and try again." }; }
   }
   let code = "";
+  // The code box is tucked under a small link (most visitors have no code yet); open it when it's needed.
+  const openHave = () => { $("codeForm").hidden = false; $("haveCode").setAttribute("aria-expanded", "true"); };
+  $("haveCode").onclick = () => {
+    const opening = $("codeForm").hidden;
+    $("codeForm").hidden = !opening; $("haveCode").setAttribute("aria-expanded", String(opening));
+    if (opening) $("code").focus();
+  };
   async function openCode(c, msgEl) {
+    openHave();
     c = norm(c);
     if (!valid(c)) { say(msgEl, "That doesn't look like an access code. It looks like ALV-1A2B3C-4D5E6F.", "err"); return; }
     say(msgEl, "Checking…");
