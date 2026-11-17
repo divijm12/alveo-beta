@@ -180,8 +180,10 @@
   const PLAT = { mac: "Mac", win: "Windows" };
   function versions(inv, rels) {
     const relOf = p => (rels || []).find(r => (r.platform || "mac") === p);
-    $("latest").textContent = ["mac", "win"].map(p => relOf(p)).filter(r => r?.short_version)
-      .map(r => `${PLAT[r.platform || "mac"]} ${r.short_version} (build ${r.build})`).join(" · ").replace(/^(?=.)/, "Latest beta: ");
+    const shown = ["mac", "win"].map(p => relOf(p)).filter(r => r?.short_version);
+    const checked = shown.map(r => r.updated_at).filter(Boolean).sort().pop();     // newest refresh of these rows
+    $("latest").textContent = shown.map(r => `${PLAT[r.platform || "mac"]} ${r.short_version} (build ${r.build})`)
+      .join(" · ").replace(/^(?=.)/, "Latest beta: ") + (shown.length && checked ? ` · checked ${ago(checked)}` : "");
     const active = inv.filter(i => i.activated_at && !i.revoked)
       .sort((a, b) => new Date(b.app_seen_at || b.last_seen_at || 0) - new Date(a.app_seen_at || a.last_seen_at || 0));
     $("verRows").innerHTML = active.map(i => {
@@ -198,9 +200,18 @@
     }).join("") || '<tr><td colspan="3" class="sub">No active testers yet.</td></tr>';
   }
 
+  // "Latest beta" comes from beta_release, which beta-appcast only updates when a tester's app checks (hourly). Ask the
+  // server to refresh it from the GitHub releases first (owner, 2026-11-16), at most once a minute; errors -> old rows.
+  let releasesAt = 0;
+  async function refreshReleases() {
+    if (Date.now() - releasesAt < 60e3) return;
+    releasesAt = Date.now();
+    try { await fn("beta-admin-invite", { action: "refresh_releases" }); } catch { /* keep the stored rows */ }
+  }
+
   async function load() {
     const { data: inv, error } = await sb.from("beta_invites").select("*").order("created_at", { ascending: false });
-    if (!error) { const { data: rels } = await sb.from("beta_release").select("*"); versions(inv, rels); }
+    if (!error) { await refreshReleases(); const { data: rels } = await sb.from("beta_release").select("*"); versions(inv, rels); }
     if (error) { $("rows").innerHTML = `<tr><td colspan="5">Couldn't load invites: ${esc(error.message)}</td></tr>`; return; }
     const { data: clips } = await sb.from("beta_clips").select("invite_id");
     const n = {}; (clips || []).forEach(c => n[c.invite_id] = (n[c.invite_id] || 0) + 1);
