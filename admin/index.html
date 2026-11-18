@@ -33,7 +33,7 @@
     </section>
     <section class="card">
       <h1 style="text-align:left;font-size:1.25rem">New invite</h1>
-      <p class="fine">Only invite people who agreed to share data. One invite = one download + one computer (Mac or Windows). The link expires in 30 days if unused.</p>
+      <p class="fine">Only invite people who agreed to share data. One invite = one download + one Mac. The link expires in 30 days if unused.</p>
       <div class="row">
         <input id="invName" placeholder="Name (shown to them)" maxlength="80">
         <input id="invEmail" type="email" placeholder="Their email (they'll verify it)">
@@ -180,7 +180,8 @@
   const PLAT = { mac: "Mac", win: "Windows" };
   function versions(inv, rels) {
     const relOf = p => (rels || []).find(r => (r.platform || "mac") === p);
-    const shown = ["mac", "win"].map(p => relOf(p)).filter(r => r?.short_version);
+    // Mac only (Windows discontinued 2026-11-18); tester pills keep their platform for history.
+    const shown = ["mac"].map(p => relOf(p)).filter(r => r?.short_version);
     const checked = shown.map(r => r.updated_at).filter(Boolean).sort().pop();     // newest refresh of these rows
     $("latest").textContent = shown.map(r => `${PLAT[r.platform || "mac"]} ${r.short_version} (build ${r.build})`)
       .join(" · ").replace(/^(?=.)/, "Latest beta: ") + (shown.length && checked ? ` · checked ${ago(checked)}` : "");
@@ -262,7 +263,7 @@
     }
     say("createMsg", note, note.includes("failed") ? "err" : "ok");
     $("newLink").textContent = link; $("newInvite").hidden = false;
-    lastMsg = `Hey${name ? " " + name : ""}! Here's your personal invite to the Alveo beta: ${link}\nIt's only for you: you'll confirm with your email (${email}), it downloads once, and it works on one computer (Mac or Windows). As we discussed, the beta shares the short clips from alerts you answer to help train Alveo.`;
+    lastMsg = `Hey${name ? " " + name : ""}! Here's your personal invite to the Alveo beta: ${link}\nIt's only for you: you'll confirm with your email (${email}), it downloads once, and it works on one Mac. As we discussed, the beta shares the short clips from alerts you answer to help train Alveo.`;
     $("invName").value = ""; $("invEmail").value = ""; load();
   };
   $("copyLink").onclick = async () => { try { await navigator.clipboard.writeText($("newLink").textContent); $("copyLink").textContent = "Copied"; } catch {} };
