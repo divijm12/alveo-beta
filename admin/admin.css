@@ -1,0 +1,14 @@
+/* Admin page only. Hidden until admin.js confirms it is the top window (frame-buster); classes replace inline
+   styles so the CSP can keep style-src 'self' (no 'unsafe-inline'). */
+html:not(.top-ok) { display: none !important; }
+.between { justify-content: space-between; }
+.wm-sm { width: 150px; }
+.narrow { max-width: 30rem; }
+.h-left { text-align: left; }
+.h-sec { text-align: left; font-size: 1.25rem; }
+.stack22 { display: grid; gap: 22px; }
+.stack10 { display: grid; gap: 10px; }
+.stack12 { display: grid; gap: 12px; }
+.check { gap: 8px; font-size: .85rem; color: var(--ink-2); }
+.auto-size { width: auto; height: auto; }
+.relabel-row { gap: 8px; align-items: center; }
